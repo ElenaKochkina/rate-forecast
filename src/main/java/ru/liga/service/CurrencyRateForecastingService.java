@@ -26,11 +26,11 @@ public class CurrencyRateForecastingService {
         switch (command.getForecastType()) {
             case TOMORROW -> {
                 Currency currency = calculateCurrencyRateForTomorrow(currencyDataForForecasting);
-                printCurrencyRateForTomorrow(currency);
+                printCurrencyRate(currency);
             }
             case WEEK -> {
                 List<Currency> currencyList = calculateCurrencyRatesForWeek(currencyDataForForecasting);
-                printCurrencyRatesForWeek(currencyList);
+                currencyList.forEach(currency -> printCurrencyRate(currency));
             }
             default ->
                     throw new IllegalArgumentException("Неподдерживаемый тип прогноза: " + command.getForecastType());
@@ -60,15 +60,8 @@ public class CurrencyRateForecastingService {
         return calculatedRates;
     }
 
-    public void printCurrencyRateForTomorrow(Currency currency) {
+    public void printCurrencyRate(Currency currency) {
         String formattedDate = currency.getRateDate().format(DATE_FORMATTER);
         System.out.printf("%s - %.2f;%n", formattedDate, currency.getRate());
-    }
-
-    public void printCurrencyRatesForWeek(List<Currency> currencyList) {
-        currencyList.forEach(currency -> {
-            String formattedDate = currency.getRateDate().format(DATE_FORMATTER);
-            System.out.printf("%s - %.2f;%n", formattedDate, currency.getRate());
-        });
     }
 }

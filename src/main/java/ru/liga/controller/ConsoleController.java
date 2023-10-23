@@ -17,7 +17,7 @@ public class ConsoleController {
 
     public void listen() {
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Введите команду");
+        System.out.println("Введите команду:");
 
         while (scanner.hasNextLine()) {
             String input = scanner.nextLine();
