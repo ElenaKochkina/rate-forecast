@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class CsvParser {
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private final CsvReader csvReader;
 
     public List<Currency> parseCurrencyDataFromFile(String filePath) {
@@ -25,11 +26,10 @@ public class CsvParser {
     }
 
     private LocalDate parseDate(String dateStr) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         try {
-            return LocalDate.parse(dateStr, formatter);
+            return LocalDate.parse(dateStr, DATE_FORMATTER);
         } catch (DateTimeParseException e) {
-            throw new RuntimeException("Ошибка парсинга даты: " + dateStr, e);
+            throw new CsvParserException("Ошибка парсинга даты: " + dateStr, e);
         }
     }
 
@@ -37,7 +37,7 @@ public class CsvParser {
         try {
             return new BigDecimal(rateStr.replace(",", "."));
         } catch (NumberFormatException e) {
-            throw new RuntimeException("Ошибка парсинга курса: " + rateStr, e);
+            throw new CsvParserException("Ошибка парсинга курса: " + rateStr, e);
         }
     }
 }

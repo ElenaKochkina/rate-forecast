@@ -1,10 +1,10 @@
 package ru.liga.service;
 
+import lombok.RequiredArgsConstructor;
 import ru.liga.algorithm.AverageRateCalculator;
 import ru.liga.domain.Command;
 import ru.liga.domain.Currency;
 import ru.liga.domain.CurrencyCode;
-import ru.liga.parser.CsvParser;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -12,50 +12,38 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+@RequiredArgsConstructor
 public class CurrencyRateForecastingService {
-    CsvParser csvParser;
-    private static final int DAYS_IN_WEEK = 7;
+    private static final int DAYS_FOR_TOMORROW_FORECAST = 1;
+    private static final int DAYS_FOR_WEEK_FORECAST = 7;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("E dd.MM.yyyy");
-
-    public CurrencyRateForecastingService(CsvParser csvParser) {
-        this.csvParser = csvParser;
-    }
+    private final CurrencyRateStorage currencyRateStorage;
 
     public void calculateAndPrintCurrencyForecast(Command command) {
         List<Currency> currencyDataForForecasting = getCurrencyDataForForecasting(command.getCurrencyCode());
+        List<Currency> forecastedCurrency;
         switch (command.getForecastType()) {
-            case TOMORROW -> {
-                Currency currency = calculateCurrencyRateForTomorrow(currencyDataForForecasting);
-                printCurrencyRate(currency);
-            }
-            case WEEK -> {
-                List<Currency> currencyList = calculateCurrencyRatesForWeek(currencyDataForForecasting);
-                currencyList.forEach(currency -> printCurrencyRate(currency));
-            }
+            case TOMORROW ->
+                    forecastedCurrency = calculateCurrencyRates(currencyDataForForecasting, DAYS_FOR_TOMORROW_FORECAST);
+            case WEEK ->
+                    forecastedCurrency = calculateCurrencyRates(currencyDataForForecasting, DAYS_FOR_WEEK_FORECAST);
             default ->
                     throw new IllegalArgumentException("Неподдерживаемый тип прогноза: " + command.getForecastType());
         }
+        forecastedCurrency.forEach(currency -> printCurrencyRate(currency));
     }
 
     private List<Currency> getCurrencyDataForForecasting(CurrencyCode currencyCode) {
-        return csvParser.parseCurrencyDataFromFile(getFileName(currencyCode));
+        return currencyRateStorage.getCurrencyData(currencyCode);
     }
 
-    private String getFileName(CurrencyCode currencyCode) {
-        return currencyCode.name().toLowerCase() + ".csv";
-    }
-
-    private Currency calculateCurrencyRateForTomorrow(List<Currency> currencyDataForForecasting) {
-        BigDecimal rate = AverageRateCalculator.getAverageRate(currencyDataForForecasting);
-        return new Currency(LocalDate.now().plusDays(1), rate);
-    }
-
-    private List<Currency> calculateCurrencyRatesForWeek(List<Currency> currencyDataForForecasting) {
+    private List<Currency> calculateCurrencyRates(List<Currency> currencyDataForForecasting, int forecastDays) {
         List<Currency> calculatedRates = new ArrayList<>();
-        for (int i = 0; i < DAYS_IN_WEEK; i++) {
-            BigDecimal averageRate = AverageRateCalculator.getAverageRate(currencyDataForForecasting);
-            currencyDataForForecasting.add(0, new Currency(LocalDate.now().plusDays(i + 1), averageRate));
-            calculatedRates.add(currencyDataForForecasting.get(0));
+        List<Currency> workingDataForForecasting = new ArrayList<>(currencyDataForForecasting);
+        for (int i = 0; i < forecastDays; i++) {
+            BigDecimal averageRate = AverageRateCalculator.getAverageRate(workingDataForForecasting);
+            workingDataForForecasting.add(0, new Currency(LocalDate.now().plusDays(i + 1), averageRate));
+            calculatedRates.add(workingDataForForecasting.get(0));
         }
         return calculatedRates;
     }

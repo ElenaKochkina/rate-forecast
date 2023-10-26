@@ -43,7 +43,7 @@ public class ConsoleController {
                 ForecastType forecastType = ForecastType.getByValue(matcher.group(2));
                 return new Command(currencyCode, forecastType);
             } catch (IllegalArgumentException e) {
-                System.out.printf("Ошибка: %s%n", e.getMessage());
+                System.out.printf("Ошибка при обработке введенной команды. %s%n", e.getMessage());
                 return null;
             }
         } else {

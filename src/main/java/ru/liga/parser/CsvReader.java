@@ -11,6 +11,7 @@ public class CsvReader {
         try {
             return Files.readAllLines(new File(getClass().getClassLoader().getResource(csvPath).toURI()).toPath());
         } catch (Exception e) {
+            System.out.println("Ошибка при чтении файла: " + e.getMessage());
             return Collections.emptyList();
         }
     }
