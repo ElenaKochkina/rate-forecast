@@ -1,9 +1,11 @@
 package ru.liga.domain;
 
 public enum CurrencyCode {
-    TRY,
+    EUR,
     USD,
-    EUR;
+    TRY,
+    BGN,
+    AMD;
 
     public static CurrencyCode customValueOf(String value) {
         for (CurrencyCode code : values()) {
