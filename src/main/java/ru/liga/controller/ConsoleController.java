@@ -2,18 +2,18 @@ package ru.liga.controller;
 
 import lombok.RequiredArgsConstructor;
 import ru.liga.domain.Command;
-import ru.liga.domain.CurrencyCode;
-import ru.liga.domain.ForecastType;
+import ru.liga.domain.Currency;
+import ru.liga.output.ListOutputGenerator;
 import ru.liga.service.CurrencyRateForecastingService;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
 public class ConsoleController {
-    private final CurrencyRateForecastingService currencyRatePredictorService;
-    private final Pattern commandPattern = Pattern.compile("^rate\\s(\\w+)\\s(\\w+)$");
+    private final ConsoleCommandParser consoleCommandParser;
+    private final CurrencyRateForecastingService forecastingService;
 
     public void listen() {
         Scanner scanner = new Scanner(System.in);
@@ -26,28 +26,20 @@ public class ConsoleController {
                 System.exit(0);
             }
 
-            Command command = parseInputCommand(input);
-            if (command == null) {
-                System.out.printf("Неправильный формат команды. Команда %s не может быть выполнена.%n", input);
-            } else {
-                currencyRatePredictorService.calculateAndPrintCurrencyForecast(command);
+            if (input.equals("help")) {
+                System.out.println("Для получения прогноза курса валюты введите команду в формате:\n" +
+                        "rate [Код валюты] [Период прогноза]\n" +
+                        "Например, rate TRY tomorrow");
             }
-        }
-    }
 
-    private Command parseInputCommand(String input) {
-        Matcher matcher = commandPattern.matcher(input);
-        if (matcher.matches()) {
-            try {
-                CurrencyCode currencyCode = CurrencyCode.customValueOf(matcher.group(1));
-                ForecastType forecastType = ForecastType.getByValue(matcher.group(2));
-                return new Command(currencyCode, forecastType);
-            } catch (IllegalArgumentException e) {
-                System.out.printf("Ошибка при обработке введенной команды. %s%n", e.getMessage());
-                return null;
+            Command command = consoleCommandParser.parseInputCommand(input);
+            if (command == null) {
+                System.out.printf("Неправильный формат команды. Команда %s не может быть выполнена\n", input);
+            } else {
+                Map<String, List<Currency>> forecastedCurrency = forecastingService.calculateCurrencyRates(command);
+                ListOutputGenerator listOutputGenerator = new ListOutputGenerator();
+                System.out.print(listOutputGenerator.createList(forecastedCurrency));
             }
-        } else {
-            return null;
         }
     }
 }

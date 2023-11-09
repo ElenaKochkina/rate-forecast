@@ -1,17 +1,19 @@
 package ru.liga.parser;
 
+import lombok.extern.log4j.Log4j2;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
-
+@Log4j2
 public class CsvReader {
 
     public List<String> readAllLines(String csvPath) {
         try {
             return Files.readAllLines(new File(getClass().getClassLoader().getResource(csvPath).toURI()).toPath());
         } catch (Exception e) {
-            System.out.println("Ошибка при чтении файла: " + e.getMessage());
+            log.error("Ошибка при чтении файла: {}. {}", csvPath, e.getMessage());
             return Collections.emptyList();
         }
     }

@@ -2,7 +2,7 @@ package ru.liga.service;
 
 import lombok.RequiredArgsConstructor;
 import ru.liga.domain.Currency;
-import ru.liga.domain.CurrencyCode;
+import ru.liga.enums.CurrencyCode;
 import ru.liga.parser.CsvParser;
 
 import java.util.EnumMap;

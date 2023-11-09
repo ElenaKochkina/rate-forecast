@@ -1,4 +1,4 @@
-package ru.liga.domain;
+package ru.liga.enums;
 
 public enum CurrencyCode {
     EUR,

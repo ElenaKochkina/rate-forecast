@@ -1,0 +1,11 @@
+package ru.liga.telegram;
+
+public enum TelegramBotState {
+    WAITING_START,
+    WAITING_CURRENCY_CODES,
+    WAITING_DATE_OR_PERIOD,
+    WAITING_PERIOD,
+    WAITING_DATE,
+    WAITING_ALGORITHM,
+    WAITING_OUTPUT_TYPE
+}

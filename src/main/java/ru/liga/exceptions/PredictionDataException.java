@@ -1,4 +1,4 @@
-package ru.liga.algorithm;
+package ru.liga.exceptions;
 
 public class PredictionDataException extends RuntimeException {
     public PredictionDataException(String message) {

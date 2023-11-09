@@ -1,14 +1,14 @@
 package ru.liga.domain;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Getter
 public class Currency {
-    private LocalDate rateDate;
-    private BigDecimal rate;
+    private final LocalDate rateDate;
+    private final BigDecimal rate;
 }

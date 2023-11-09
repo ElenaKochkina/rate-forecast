@@ -1,4 +1,4 @@
-package ru.liga.parser;
+package ru.liga.exceptions;
 
 public class CsvParserException extends RuntimeException {
     public CsvParserException(String message) {

@@ -2,6 +2,7 @@ package ru.liga.parser;
 
 import lombok.RequiredArgsConstructor;
 import ru.liga.domain.Currency;
+import ru.liga.exceptions.CsvParserException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
