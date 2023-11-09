@@ -70,4 +70,11 @@ public class Constants {
     public static final String NO_SUCH_OUTPUT_TYPE_ERROR_MESSAGE = "Неверный тип вывода прогноза. Выберите тип вывода прогноза из списка.";
 
     public static final String FINISH_MESSAGE = "Готово! Ваш прогноз курса валют успешно сформирован. Для получения нового прогноза используйте команду /rate.";
+
+    public static final String NO_PREDICTION_DATA_ERROR_MESSAGE = """
+            Недостаточно данных для прогноза по заданному алгоритму на выбранный период.
+            Для получения нового прогноза используйте команду /rate.
+            """;
+    private Constants() {
+    }
 }

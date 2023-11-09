@@ -1,6 +1,5 @@
 package ru.liga.telegram;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -11,10 +10,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRem
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.liga.domain.Command;
 import ru.liga.domain.Currency;
-import ru.liga.enums.AlgorithmType;
-import ru.liga.enums.CurrencyCode;
-import ru.liga.enums.ForecastPeriod;
-import ru.liga.enums.OutputType;
+import ru.liga.enums.*;
 import ru.liga.exceptions.PredictionDataException;
 import ru.liga.output.ChartOutputGenerator;
 import ru.liga.output.ListOutputGenerator;
@@ -28,17 +24,22 @@ import java.util.List;
 import java.util.Map;
 
 @Log4j2
-@RequiredArgsConstructor
 public class TelegramBot extends TelegramLongPollingBot {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private final String botUsername = "rate-forecaster";
     private final String botToken = "6595631701:AAHHG4HphplFWiGVg3hlY0trpTAwkFRDrFs";
-    private final SendMessageGenerator sendMessageGenerator = new SendMessageGenerator();
-    private final ReplyKeyboarGenerator replyKeyboardGenerator = new ReplyKeyboarGenerator();
     private final CurrencyRateForecastingService forecastingService;
+    private final SendMessageGenerator sendMessageGenerator;
+    private final ReplyKeyboardGenerator replyKeyboardGenerator;
     private TelegramBotState currentState = TelegramBotState.WAITING_START;
     private Command command;
     private List<CurrencyCode> selectedCurrencies = new ArrayList<>();
+
+    public TelegramBot(CurrencyRateForecastingService forecastingService) {
+        this.forecastingService = forecastingService;
+        this.sendMessageGenerator = new SendMessageGenerator();
+        this.replyKeyboardGenerator = new ReplyKeyboardGenerator();
+    }
 
     @Override
     public String getBotUsername() {
@@ -55,34 +56,38 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             String chatId = update.getMessage().getChatId().toString();
-            //todo enum
+
             switch (messageText) {
-                case "/start" -> {
-                    SendMessage sendMessage = sendMessageGenerator.createTextMessage(chatId, Messages.START_MESSAGE);
-                    executeMessage(sendMessage);
-                    currentState = TelegramBotState.WAITING_START;
-                }
-                case "/help" -> {
-                    SendMessage sendMessage = sendMessageGenerator.createTextMessage(chatId, Messages.HELP_MESSAGE);
-                    executeMessage(sendMessage);
-                }
-                case "/exit" -> {
-                    SendMessage sendMessage = sendMessageGenerator.createTextMessage(chatId, Messages.EXIT_MESSAGE);
-                    executeMessage(sendMessage);
-                    currentState = TelegramBotState.WAITING_START;
-                }
-                case "/rate" -> {
-                    ReplyKeyboard keyboard = replyKeyboardGenerator.getCurrencyKeyboard();
-                    SendMessage sendMessage = sendMessageGenerator.createTextMessageWithReplyKeyboard(chatId,
-                            Messages.RATE_MESSAGE, keyboard);
-                    executeMessage(sendMessage);
-                    command = new Command();
-                    selectedCurrencies = new ArrayList<>();
-                    currentState = TelegramBotState.WAITING_CURRENCY_CODES;
-                }
+                case Constants.START_COMMAND -> handleStartCommand(chatId);
+                case Constants.HELP_COMMAND -> handleHelpCommand(chatId);
+                case Constants.EXIT_COMMAND -> handleExitCommand(chatId);
+                case Constants.RATE_COMMAND -> handleRateCommand(chatId);
                 default -> handleMessage(update);
             }
         }
+    }
+
+    private void handleStartCommand(String chatId) {
+        sendMessage(chatId, Constants.START_MESSAGE);
+        currentState = TelegramBotState.WAITING_START;
+    }
+
+    private void handleHelpCommand(String chatId) {
+        sendMessage(chatId, Constants.HELP_MESSAGE);
+    }
+
+    private void handleExitCommand(String chatId) {
+        sendMessage(chatId, Constants.EXIT_MESSAGE);
+        currentState = TelegramBotState.WAITING_START;
+    }
+
+    private void handleRateCommand(String chatId) {
+        ReplyKeyboard keyboard = replyKeyboardGenerator.getCurrencyKeyboard();
+        sendMessageWithReplyKeyboard(chatId, Constants.RATE_MESSAGE, keyboard);
+
+        command = new Command();
+        selectedCurrencies = new ArrayList<>();
+        currentState = TelegramBotState.WAITING_CURRENCY_CODES;
     }
 
     private void handleMessage(Update update) {
@@ -91,27 +96,23 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         switch (currentState) {
             case WAITING_CURRENCY_CODES -> handleCurrencyCodeSelection(chatId, messageText);
+            case WAITING_ALGORITHM -> handleAlgorithmSelection(chatId, messageText);
             case WAITING_DATE_OR_PERIOD -> handleDateOrPeriodSelection(chatId, messageText);
             case WAITING_PERIOD -> handlePeriodSelection(chatId, messageText);
             case WAITING_DATE -> handleDateSelection(chatId, messageText);
-            case WAITING_ALGORITHM -> handleAlgorithmSelection(chatId, messageText);
             case WAITING_OUTPUT_TYPE -> handleOutputTypeSelection(chatId, messageText);
         }
     }
 
     private void handleCurrencyCodeSelection(String chatId, String messageText) {
-        if (messageText.equals("Завершить")) {
+        if (messageText.equals(Constants.FINISH_BUTTON)) {
             if (selectedCurrencies.isEmpty()) {
-                SendMessage message = sendMessageGenerator.createTextMessage(chatId,
-                        Messages.NOT_SELECTED_CURRENCY_ERROR_MESSAGE);
-                executeMessage(message);
+                sendMessage(chatId, Constants.NO_SELECTED_CURRENCY_ERROR_MESSAGE);
             } else {
-                ReplyKeyboard keyboard = replyKeyboardGenerator.getPeriodOrDateKeyboard();
-                SendMessage message = sendMessageGenerator.createTextMessageWithReplyKeyboard(chatId,
-                        Messages.SELECT_DATE_OR_PERIOD_MESSAGE, keyboard);
-                executeMessage(message);
-                command.setCurrencyCodes(selectedCurrencies);
-                currentState = TelegramBotState.WAITING_DATE_OR_PERIOD;
+                ReplyKeyboard keyboard = replyKeyboardGenerator.getAlgorithmKeyboard();
+                sendMessageWithReplyKeyboard(chatId, Constants.SELECT_ALGORITHM_MESSAGE, keyboard);
+                currentState = TelegramBotState.WAITING_ALGORITHM;
+
             }
         } else {
             try {
@@ -119,39 +120,43 @@ public class TelegramBot extends TelegramLongPollingBot {
                 if (!selectedCurrencies.contains(currencyCode)) {
                     selectedCurrencies.add(currencyCode);
                 }
-                String confirmationMessage = Messages.CURRENCY_CONFIRM_MESSAGE + selectedCurrencies;
-                SendMessage confirmation = sendMessageGenerator.createTextMessage(chatId, confirmationMessage);
-                executeMessage(confirmation);
+                sendMessage(chatId, Constants.CURRENCY_CONFIRM_MESSAGE + selectedCurrencies);
             } catch (IllegalArgumentException e) {
-                SendMessage errorMessage = sendMessageGenerator.createTextMessage(chatId,
-                        Messages.NO_SUCH_CURRENCY_ERROR_MESSAGE);
-                executeMessage(errorMessage);
+                sendMessage(chatId, Constants.NO_SUCH_CURRENCY_ERROR_MESSAGE);
             }
         }
     }
 
+    private void handleAlgorithmSelection(String chatId, String messageText) {
+        try {
+            AlgorithmType algorithmType = AlgorithmType.valueOf(messageText);
+            command.setAlgorithmType(algorithmType);
+            ReplyKeyboard keyboard = replyKeyboardGenerator.getPeriodOrDateKeyboard();
+            sendMessageWithReplyKeyboard(chatId, Constants.SELECT_DATE_OR_PERIOD_MESSAGE, keyboard);
+            command.setCurrencyCodes(selectedCurrencies);
+            currentState = TelegramBotState.WAITING_DATE_OR_PERIOD;
+        } catch (IllegalArgumentException e) {
+            sendMessage(chatId, Constants.NO_SUCH_ALGORITHM_ERROR_MESSAGE);
+        }
+    }
+
     private void handleDateOrPeriodSelection(String chatId, String messageText) {
-        switch (messageText) {
-            //todo enam
-            case "Date" -> {
-                ReplyKeyboardRemove replyKeyboardRemove = new ReplyKeyboardRemove(true);
-                SendMessage message = sendMessageGenerator.createTextMessageWithReplyKeyboard(chatId,
-                        Messages.SELECT_DATE_MESSAGE, replyKeyboardRemove);
-                executeMessage(message);
-                currentState = TelegramBotState.WAITING_DATE;
+        try {
+            ForecastDuration forecastDuration = ForecastDuration.valueOf(messageText);
+            switch (forecastDuration) {
+                case DATE -> {
+                    ReplyKeyboardRemove replyKeyboardRemove = new ReplyKeyboardRemove(true);
+                    sendMessageWithReplyKeyboard(chatId, Constants.SELECT_DATE_MESSAGE, replyKeyboardRemove);
+                    currentState = TelegramBotState.WAITING_DATE;
+                }
+                case PERIOD -> {
+                    ReplyKeyboard keyboard = replyKeyboardGenerator.getPeriodKeyboard();
+                    sendMessageWithReplyKeyboard(chatId, Constants.SELECT_PERIOD_MESSAGE, keyboard);
+                    currentState = TelegramBotState.WAITING_PERIOD;
+                }
             }
-            case "Period" -> {
-                ReplyKeyboard keyboard = replyKeyboardGenerator.getPeriodKeyboard();
-                SendMessage message = sendMessageGenerator.createTextMessageWithReplyKeyboard(chatId,
-                        Messages.SELECT_PERIOD_MESSAGE, keyboard);
-                executeMessage(message);
-                currentState = TelegramBotState.WAITING_PERIOD;
-            }
-            default -> {
-                SendMessage errorMessage = sendMessageGenerator.createTextMessage(chatId,
-                        Messages.DATE_OR_PERIOD_ERROR_MESSAGE);
-                executeMessage(errorMessage);
-            }
+        } catch (IllegalArgumentException e) {
+            sendMessage(chatId, Constants.DATE_OR_PERIOD_ERROR_MESSAGE);
         }
     }
 
@@ -170,16 +175,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (date != null && date.isAfter(LocalDate.now())) {
             command.setStartDate(date);
             command.setEndDate(date);
-
-            ReplyKeyboard keyboard = replyKeyboardGenerator.getAlgorithmKeyboard();
-            SendMessage message = sendMessageGenerator.createTextMessageWithReplyKeyboard(chatId,
-                    Messages.SELECT_ALGORITHM_MESSAGE, keyboard);
-            executeMessage(message);
-            currentState = TelegramBotState.WAITING_ALGORITHM;
+            command.setOutputType(OutputType.LIST);
+            sendCurrencyForecast(chatId);
         } else {
-            SendMessage errorMessage = sendMessageGenerator.createTextMessage(chatId,
-                    Messages.SELECT_DATE_ERROR_MESSAGE);
-            executeMessage(errorMessage);
+            sendMessage(chatId, Constants.SELECT_DATE_ERROR_MESSAGE);
         }
     }
 
@@ -196,31 +195,11 @@ public class TelegramBot extends TelegramLongPollingBot {
                     command.setEndDate(LocalDate.now().plusDays(30));
                 }
             }
-            ReplyKeyboard keyboard = replyKeyboardGenerator.getAlgorithmKeyboard();
-            SendMessage message = sendMessageGenerator.createTextMessageWithReplyKeyboard(chatId,
-                    Messages.SELECT_ALGORITHM_MESSAGE, keyboard);
-            executeMessage(message);
-            currentState = TelegramBotState.WAITING_ALGORITHM;
-        } catch (IllegalArgumentException e) {
-            SendMessage errorMessage = sendMessageGenerator.createTextMessage(chatId,
-                    Messages.NO_SUCH_PERIOD_ERROR_MESSAGE);
-            executeMessage(errorMessage);
-        }
-    }
-
-    private void handleAlgorithmSelection(String chatId, String messageText) {
-        try {
-            AlgorithmType algorithmType = AlgorithmType.valueOf(messageText);
-            command.setAlgorithmType(algorithmType);
             ReplyKeyboard keyboard = replyKeyboardGenerator.getOutputTypeKeyboard();
-            SendMessage message = sendMessageGenerator.createTextMessageWithReplyKeyboard(chatId,
-                    Messages.SELECT_OUTPUT_TYPE_MESSAGE, keyboard);
-            executeMessage(message);
+            sendMessageWithReplyKeyboard(chatId, Constants.SELECT_OUTPUT_TYPE_MESSAGE, keyboard);
             currentState = TelegramBotState.WAITING_OUTPUT_TYPE;
         } catch (IllegalArgumentException e) {
-            SendMessage errorMessage = sendMessageGenerator.createTextMessage(chatId,
-                    Messages.NO_SUCH_ALGORITHM_ERROR_MESSAGE);
-            executeMessage(errorMessage);
+            sendMessage(chatId, Constants.NO_SUCH_PERIOD_ERROR_MESSAGE);
         }
     }
 
@@ -228,15 +207,21 @@ public class TelegramBot extends TelegramLongPollingBot {
         try {
             OutputType outputType = OutputType.valueOf(messageText);
             command.setOutputType(outputType);
+            sendCurrencyForecast(chatId);
+        } catch (IllegalArgumentException e) {
+            sendMessage(chatId, Constants.NO_SUCH_OUTPUT_TYPE_ERROR_MESSAGE);
+        }
+    }
 
+    private void sendCurrencyForecast(String chatId) {
+        try {
             Map<String, List<Currency>> forecastedCurrency = forecastingService.calculateCurrencyRates(command);
 
             switch (command.getOutputType()) {
                 case LIST -> {
                     ListOutputGenerator listOutputGenerator = new ListOutputGenerator();
                     String currencies = listOutputGenerator.createList(forecastedCurrency);
-                    SendMessage message = sendMessageGenerator.createTextMessage(chatId, currencies);
-                    executeMessage(message);
+                    sendMessage(chatId, currencies);
                 }
                 case GRAPH -> {
                     ChartOutputGenerator chartOutputGenerator = new ChartOutputGenerator();
@@ -246,22 +231,23 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
             }
             ReplyKeyboardRemove replyKeyboardRemove = new ReplyKeyboardRemove(true);
-            SendMessage message = sendMessageGenerator.createTextMessageWithReplyKeyboard(chatId,
-                    Messages.FINISH_MESSAGE, replyKeyboardRemove);
-            executeMessage(message);
+            sendMessageWithReplyKeyboard(chatId, Constants.FINISH_MESSAGE, replyKeyboardRemove);
             currentState = TelegramBotState.WAITING_START;
-        } catch (IllegalArgumentException e) {
-            log.error(e.getMessage());
-            e.printStackTrace();
-            SendMessage errorMessage = sendMessageGenerator.createTextMessage(chatId,
-                    Messages.NO_SUCH_OUTPUT_TYPE_ERROR_MESSAGE);
-            executeMessage(errorMessage);
         } catch (PredictionDataException e) {
-            //todo дописать на возвращение к дате
-            SendMessage errorMessage = sendMessageGenerator.createTextMessage(chatId,
-                    "Написать сообщение об ошибке");
-            executeMessage(errorMessage);
+            ReplyKeyboardRemove replyKeyboardRemove = new ReplyKeyboardRemove(true);
+            sendMessageWithReplyKeyboard(chatId, Constants.NO_PREDICTION_DATA_ERROR_MESSAGE, replyKeyboardRemove);
+            currentState = TelegramBotState.WAITING_START;
         }
+    }
+
+    private void sendMessage(String chatId, String text) {
+        SendMessage message = sendMessageGenerator.createTextMessage(chatId, text);
+        executeMessage(message);
+    }
+
+    private void sendMessageWithReplyKeyboard(String chatId, String text, ReplyKeyboard keyboard) {
+        SendMessage message = sendMessageGenerator.createTextMessageWithReplyKeyboard(chatId, text, keyboard);
+        executeMessage(message);
     }
 
     private void executeMessage(SendMessage message) {
