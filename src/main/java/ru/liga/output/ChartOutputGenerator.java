@@ -38,7 +38,7 @@ public class ChartOutputGenerator {
     public byte[] createChart(Map<String, List<Currency>> currencyData) {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
-        log.debug("Создание графика курсов валют");
+        log.info("Создание графика прогнозируемых курсов валют");
 
         for (Map.Entry<String, List<Currency>> entry : currencyData.entrySet()) {
             String currencyCode = entry.getKey();
@@ -67,15 +67,15 @@ public class ChartOutputGenerator {
         CategoryAxis categoryAxis = plot.getDomainAxis();
         categoryAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
 
-        log.debug("График сгенерирован");
+        log.info("График прогнозируемых курсов валют сгенерирован");
 
         try {
             File chartFile = new File(FILE_NAME);
             ChartUtils.saveChartAsPNG(chartFile, lineChart, CHART_WIDTH, CHART_HEIGHT);
-            log.info("График сохранен в " + FILE_NAME);
+            log.debug("График сохранен в " + FILE_NAME);
             return Files.readAllBytes(chartFile.toPath());
         } catch (IOException e) {
-            log.error("Ошибка при сохранении графика: " + e.getMessage());
+            log.error("Ошибка при сохранении графика: {}", e.getMessage());
             return new byte[0];
         }
     }

@@ -10,7 +10,16 @@ import java.util.Map;
 @Log4j2
 public class ListOutputGenerator {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("E dd.MM.yyyy");
+
+    /**
+     * Создает текстовое представление списка прогнозируемых курсов валют.
+     *
+     * @param currencyData Прогнозируемые курсы валют, сгруппированные по коду валюты.
+     * @return Текстовое представление списка прогнозируемых курсов валют.
+     */
     public String createList(Map<String, List<Currency>> currencyData) {
+        log.info("Формирование списка прогнозируемых курсов валют для вывода пользователю");
+
         StringBuilder result = new StringBuilder();
 
         for (Map.Entry<String, List<Currency>> entry : currencyData.entrySet()) {
@@ -24,7 +33,7 @@ public class ListOutputGenerator {
             }
             result.append("\n");
         }
-
+        log.info("Список прогнозируемых курсов валют для вывода пользователю успешно сформирован");
         return String.valueOf(result);
     }
 }

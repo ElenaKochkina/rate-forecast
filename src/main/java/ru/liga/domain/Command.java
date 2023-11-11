@@ -21,4 +21,14 @@ public class Command {
     private LocalDate endDate;
     private AlgorithmType algorithmType;
     private OutputType outputType;
+
+    @Override
+    public String toString() {
+        return "Параметры прогноза:" +
+                "\nКоды валют: " + currencyCodes +
+                ", \nНачальная дата прогноза: " + startDate +
+                ", \nКонечная дата прогноза: " + endDate +
+                ", \nТип алгоритма: " + algorithmType +
+                ", \nТип вывода прогноза: " + outputType;
+    }
 }

@@ -16,6 +16,12 @@ import java.util.regex.Pattern;
 public class ConsoleCommandParser {
     private final Pattern commandPattern = Pattern.compile("^rate\\s(\\w+)\\s(\\w+)$");
 
+    /**
+     * Обрабатывает введенную команду и создает объект Command.
+     *
+     * @param input Введенная команда.
+     * @return Объект Command, представляющий введенную команду.
+     */
     public Command parseInputCommand(String input) {
         Matcher matcher = commandPattern.matcher(input);
         if (matcher.matches()) {
@@ -35,11 +41,11 @@ public class ConsoleCommandParser {
                             OutputType.LIST);
                 };
             } catch (IllegalArgumentException e) {
-                log.warn("Ошибка при обработке введенной команды. {}", e.getMessage());
+                log.error("Ошибка при обработке введенной команды. {}", e.getMessage());
                 return null;
             }
         } else {
-            log.warn("Неправильный формат команды. Команда '{}' не может быть выполнена", input);
+            log.error("Неправильный формат команды. Команда '{}' не может быть выполнена", input);
             return null;
         }
     }

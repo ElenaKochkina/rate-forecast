@@ -8,8 +8,8 @@ public class LinearRegression {
     /**
      * Performs a linear regression on the data points {@code (y[i], x[i])}.
      *
-     * @param  x the values of the predictor variable
-     * @param  y the corresponding values of the response variable
+     * @param x the values of the predictor variable
+     * @param y the corresponding values of the response variable
      * @throws IllegalArgumentException if the lengths of the two arrays are not equal
      */
     public LinearRegression(double[] x, double[] y) {
@@ -21,9 +21,9 @@ public class LinearRegression {
         // first pass
         double sumx = 0.0, sumy = 0.0, sumx2 = 0.0;
         for (int i = 0; i < n; i++) {
-            sumx  += x[i];
-            sumx2 += x[i]*x[i];
-            sumy  += y[i];
+            sumx += x[i];
+            sumx2 += x[i] * x[i];
+            sumy += y[i];
         }
         double xbar = sumx / n;
         double ybar = sumy / n;
@@ -35,23 +35,23 @@ public class LinearRegression {
             yybar += (y[i] - ybar) * (y[i] - ybar);
             xybar += (x[i] - xbar) * (y[i] - ybar);
         }
-        slope  = xybar / xxbar;
+        slope = xybar / xxbar;
         intercept = ybar - slope * xbar;
 
         // more statistical analysis
         double rss = 0.0;      // residual sum of squares
         double ssr = 0.0;      // regression sum of squares
         for (int i = 0; i < n; i++) {
-            double fit = slope*x[i] + intercept;
+            double fit = slope * x[i] + intercept;
             rss += (fit - y[i]) * (fit - y[i]);
             ssr += (fit - ybar) * (fit - ybar);
         }
 
-        int degreesOfFreedom = n-2;
-        r2    = ssr / yybar;
-        double svar  = rss / degreesOfFreedom;
+        int degreesOfFreedom = n - 2;
+        r2 = ssr / yybar;
+        double svar = rss / degreesOfFreedom;
         svar1 = svar / xxbar;
-        svar0 = svar/n + xbar*xbar*svar1;
+        svar0 = svar / n + xbar * xbar * svar1;
     }
 
     /**
@@ -76,7 +76,7 @@ public class LinearRegression {
      * Returns the coefficient of determination <em>R</em><sup>2</sup>.
      *
      * @return the coefficient of determination <em>R</em><sup>2</sup>,
-     *         which is a real number between 0 and 1
+     * which is a real number between 0 and 1
      */
     public double R2() {
         return r2;
@@ -104,20 +104,20 @@ public class LinearRegression {
      * Returns the expected response {@code y} given the value of the predictor
      * variable {@code x}.
      *
-     * @param  x the value of the predictor variable
+     * @param x the value of the predictor variable
      * @return the expected response {@code y} given the value of the predictor
-     *         variable {@code x}
+     * variable {@code x}
      */
     public double predict(double x) {
-        return slope*x + intercept;
+        return slope * x + intercept;
     }
 
     /**
      * Returns a string representation of the simple linear regression model.
      *
      * @return a string representation of the simple linear regression model,
-     *         including the best-fit line and the coefficient of determination
-     *         <em>R</em><sup>2</sup>
+     * including the best-fit line and the coefficient of determination
+     * <em>R</em><sup>2</sup>
      */
     public String toString() {
         StringBuilder s = new StringBuilder();

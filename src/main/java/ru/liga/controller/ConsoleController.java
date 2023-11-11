@@ -3,6 +3,7 @@ package ru.liga.controller;
 import lombok.RequiredArgsConstructor;
 import ru.liga.domain.Command;
 import ru.liga.domain.Currency;
+import ru.liga.exceptions.PredictionDataException;
 import ru.liga.output.ListOutputGenerator;
 import ru.liga.service.CurrencyRateForecastingService;
 
@@ -15,6 +16,9 @@ public class ConsoleController {
     private final ConsoleCommandParser consoleCommandParser;
     private final CurrencyRateForecastingService forecastingService;
 
+    /**
+     * Слушает ввод пользователя из консоли и обрабатывает команды.
+     */
     public void listen() {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Введите команду:");
@@ -24,21 +28,25 @@ public class ConsoleController {
 
             if (input.equals("exit")) {
                 System.exit(0);
-            }
-
-            if (input.equals("help")) {
-                System.out.println("Для получения прогноза курса валюты введите команду в формате:\n" +
-                        "rate [Код валюты] [Период прогноза]\n" +
-                        "Например, rate TRY tomorrow");
-            }
-
-            Command command = consoleCommandParser.parseInputCommand(input);
-            if (command == null) {
-                System.out.printf("Неправильный формат команды. Команда %s не может быть выполнена\n", input);
+            } else if (input.equals("help")) {
+                System.out.println("""
+                        Для получения прогноза курса валюты введите команду в формате:
+                        rate [Код валюты] [Период прогноза]
+                        Например, rate TRY tomorrow
+                        Для выхода из приложения введите команду exit""");
             } else {
-                Map<String, List<Currency>> forecastedCurrency = forecastingService.calculateCurrencyRates(command);
-                ListOutputGenerator listOutputGenerator = new ListOutputGenerator();
-                System.out.print(listOutputGenerator.createList(forecastedCurrency));
+                Command command = consoleCommandParser.parseInputCommand(input);
+                if (command == null) {
+                    System.out.printf("Неправильный формат команды. Команда %s не может быть выполнена%n", input);
+                } else {
+                    try {
+                        Map<String, List<Currency>> forecastedCurrency = forecastingService.calculateCurrencyRates(command);
+                        ListOutputGenerator listOutputGenerator = new ListOutputGenerator();
+                        System.out.print(listOutputGenerator.createList(forecastedCurrency));
+                    } catch (PredictionDataException e) {
+                        System.out.print(e.getMessage());
+                    }
+                }
             }
         }
     }
