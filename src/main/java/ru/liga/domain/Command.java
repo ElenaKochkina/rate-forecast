@@ -9,6 +9,7 @@ import ru.liga.enums.CurrencyCode;
 import ru.liga.enums.OutputType;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @AllArgsConstructor
@@ -21,6 +22,14 @@ public class Command {
     private LocalDate endDate;
     private AlgorithmType algorithmType;
     private OutputType outputType;
+
+    public void reset() {
+        this.currencyCodes = new ArrayList<>();
+        this.algorithmType = null;
+        this.startDate = null;
+        this.endDate = null;
+        this.outputType = null;
+    }
 
     @Override
     public String toString() {

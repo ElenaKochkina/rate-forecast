@@ -1,7 +1,6 @@
 package ru.liga.algorithm;
 
 import ru.liga.enums.AlgorithmType;
-import ru.liga.exceptions.NoSuchAlgorithmException;
 
 public class AlgorithmFactory {
 
@@ -15,7 +14,6 @@ public class AlgorithmFactory {
      *
      * @param algorithm Тип алгоритма прогнозирования.
      * @return Экземпляр соответствующего алгоритма прогнозирования.
-     * @throws NoSuchAlgorithmException если указанный тип алгоритма не существует.
      */
     public ForecastAlgorithm createAlgorithm(AlgorithmType algorithm) {
         return switch (algorithm) {
