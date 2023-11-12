@@ -16,6 +16,7 @@ import ru.liga.service.CurrencyRateStorage;
 import ru.liga.telegram.ReplyKeyboardGenerator;
 import ru.liga.telegram.SendMessageGenerator;
 import ru.liga.telegram.TelegramBot;
+import ru.liga.telegram.UserBotState;
 
 public class App {
 
@@ -33,7 +34,8 @@ public class App {
                 new ReplyKeyboardGenerator(),
                 new ListOutputGenerator(),
                 new ChartOutputGenerator(
-                        new DefaultCategoryDataset()));
+                        new DefaultCategoryDataset()),
+                new UserBotState());
         try {
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
             botsApi.registerBot(bot);
