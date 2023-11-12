@@ -1,10 +1,14 @@
-package ru.liga.service;
+package ru.liga.algorithm;
 
-import ru.liga.algorithm.*;
 import ru.liga.enums.AlgorithmType;
 import ru.liga.exceptions.NoSuchAlgorithmException;
 
 public class AlgorithmFactory {
+
+    MeanAlgorithm meanAlgorithm = new MeanAlgorithm();
+    LastYearAlgorithm lastYearAlgorithm = new LastYearAlgorithm();
+    InternetAlgorithm internetAlgorithm = new InternetAlgorithm();
+    MysticalAlgorithm mysticalAlgorithm = new MysticalAlgorithm();
 
     /**
      * Создает экземпляр алгоритма прогнозирования на основе переданного типа алгоритма.
@@ -14,20 +18,11 @@ public class AlgorithmFactory {
      * @throws NoSuchAlgorithmException если указанный тип алгоритма не существует.
      */
     public ForecastAlgorithm createAlgorithm(AlgorithmType algorithm) {
-        switch (algorithm) {
-            case MEAN -> {
-                return new MeanAlgorithm();
-            }
-            case LAST_YEAR -> {
-                return new LastYearAlgorithm();
-            }
-            case INTERNET -> {
-                return new InternetAlgorithm();
-            }
-            case MYST -> {
-                return new MysticalAlgorithm();
-            }
-            default -> throw new NoSuchAlgorithmException(String.format("Недопустимый тип алгоритма: %s", algorithm));
-        }
+        return switch (algorithm) {
+            case MEAN -> meanAlgorithm;
+            case LAST_YEAR -> lastYearAlgorithm;
+            case INTERNET -> internetAlgorithm;
+            case MYST -> mysticalAlgorithm;
+        };
     }
 }

@@ -15,6 +15,7 @@ import java.util.Scanner;
 public class ConsoleController {
     private final ConsoleCommandParser consoleCommandParser;
     private final CurrencyRateForecastingService forecastingService;
+    private final ListOutputGenerator listOutputGenerator;
 
     /**
      * Слушает ввод пользователя из консоли и обрабатывает команды.
@@ -35,17 +36,12 @@ public class ConsoleController {
                         Например, rate TRY tomorrow
                         Для выхода из приложения введите команду exit""");
             } else {
-                Command command = consoleCommandParser.parseInputCommand(input);
-                if (command == null) {
-                    System.out.printf("Неправильный формат команды. Команда %s не может быть выполнена%n", input);
-                } else {
-                    try {
-                        Map<String, List<Currency>> forecastedCurrency = forecastingService.calculateCurrencyRates(command);
-                        ListOutputGenerator listOutputGenerator = new ListOutputGenerator();
-                        System.out.print(listOutputGenerator.createList(forecastedCurrency));
-                    } catch (PredictionDataException e) {
-                        System.out.print(e.getMessage());
-                    }
+                try {
+                    Command command = consoleCommandParser.parseInputCommand(input);
+                    Map<String, List<Currency>> forecastedCurrency = forecastingService.calculateCurrencyRates(command);
+                    System.out.print(listOutputGenerator.createList(forecastedCurrency));
+                } catch (IllegalArgumentException | PredictionDataException e) {
+                    System.out.println(e.getMessage());
                 }
             }
         }

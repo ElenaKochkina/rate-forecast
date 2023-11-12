@@ -2,6 +2,7 @@ package ru.liga.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import ru.liga.algorithm.AlgorithmFactory;
 import ru.liga.algorithm.ForecastAlgorithm;
 import ru.liga.domain.Command;
 import ru.liga.domain.Currency;
@@ -15,6 +16,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CurrencyRateForecastingService {
     private final CurrencyRateStorage currencyRateStorage;
+    private final AlgorithmFactory algorithmFactory;
 
     /**
      * Вычисляет прогнозируемые курсы валют на основе переданных параметров команды.
@@ -24,7 +26,6 @@ public class CurrencyRateForecastingService {
      */
     public Map<String, List<Currency>> calculateCurrencyRates(Command command) {
         log.info("Начало расчета прогноза курсов валют. {}", command);
-        AlgorithmFactory algorithmFactory = new AlgorithmFactory();
         ForecastAlgorithm forecastAlgorithm = algorithmFactory.createAlgorithm(command.getAlgorithmType());
 
         Map<String, List<Currency>> forecastedCurrencyRates = new HashMap<>();

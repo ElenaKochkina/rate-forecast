@@ -1,5 +1,6 @@
 package ru.liga.output;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtils;
@@ -11,23 +12,23 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.category.DefaultCategoryDataset;
 import ru.liga.domain.Currency;
 
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
 @Log4j2
+@RequiredArgsConstructor
 public class ChartOutputGenerator {
     private static final String CHART_NAME = "График курсов валют";
     private static final String X_AXIS_LABEL = "День";
     private static final String Y_AXIS_LABEL = "Курс";
     private static final int CHART_WIDTH = 800;
     private static final int CHART_HEIGHT = 600;
-
-    private static final String FILE_NAME = "currencyExchangeRateChart.png";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("E dd.MM.yyyy");
+
+    private final DefaultCategoryDataset dataset;
 
     /**
      * Создает график курсов валют на основе предоставленных данных.
@@ -36,8 +37,6 @@ public class ChartOutputGenerator {
      * @return Массив байтов, представляющий собой изображение графика.
      */
     public byte[] createChart(Map<String, List<Currency>> currencyData) {
-        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-
         log.info("Создание графика прогнозируемых курсов валют");
 
         for (Map.Entry<String, List<Currency>> entry : currencyData.entrySet()) {
@@ -70,10 +69,9 @@ public class ChartOutputGenerator {
         log.info("График прогнозируемых курсов валют сгенерирован");
 
         try {
-            File chartFile = new File(FILE_NAME);
-            ChartUtils.saveChartAsPNG(chartFile, lineChart, CHART_WIDTH, CHART_HEIGHT);
-            log.debug("График сохранен в " + FILE_NAME);
-            return Files.readAllBytes(chartFile.toPath());
+            final ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            ChartUtils.writeChartAsPNG(stream, lineChart, CHART_WIDTH, CHART_HEIGHT);
+            return stream.toByteArray();
         } catch (IOException e) {
             log.error("Ошибка при сохранении графика: {}", e.getMessage());
             return new byte[0];

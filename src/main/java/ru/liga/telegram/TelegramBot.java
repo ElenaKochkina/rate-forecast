@@ -1,5 +1,6 @@
 package ru.liga.telegram;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -27,22 +28,19 @@ import java.util.List;
 import java.util.Map;
 
 @Log4j2
+@RequiredArgsConstructor
 public class TelegramBot extends TelegramLongPollingBot {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-    private final String botUsername = "rate-forecaster";
-    private final String botToken = "6595631701:AAHHG4HphplFWiGVg3hlY0trpTAwkFRDrFs";
+    private final String botUsername = System.getenv("BOT_USERNAME");
+    private final String botToken = System.getenv("BOT_TOKEN");
     private final CurrencyRateForecastingService forecastingService;
     private final SendMessageGenerator sendMessageGenerator;
     private final ReplyKeyboardGenerator replyKeyboardGenerator;
+    private final ListOutputGenerator listOutputGenerator;
+    private final ChartOutputGenerator chartOutputGenerator;
     private TelegramBotState currentState = TelegramBotState.WAITING_START;
     private Command command;
     private List<CurrencyCode> selectedCurrencies = new ArrayList<>();
-
-    public TelegramBot(CurrencyRateForecastingService forecastingService) {
-        this.forecastingService = forecastingService;
-        this.sendMessageGenerator = new SendMessageGenerator();
-        this.replyKeyboardGenerator = new ReplyKeyboardGenerator();
-    }
 
     @Override
     public String getBotUsername() {
@@ -56,17 +54,18 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        if (update.hasMessage() && update.getMessage().hasText()) {
-            String messageText = update.getMessage().getText();
-            String chatId = update.getMessage().getChatId().toString();
+        if (!update.hasMessage() || !update.getMessage().hasText()) {
+            return;
+        }
+        String messageText = update.getMessage().getText();
+        String chatId = update.getMessage().getChatId().toString();
 
-            switch (messageText) {
-                case Constants.START_COMMAND -> handleStartCommand(chatId, update.getMessage());
-                case Constants.HELP_COMMAND -> handleHelpCommand(chatId, update.getMessage());
-                case Constants.EXIT_COMMAND -> handleExitCommand(chatId, update.getMessage());
-                case Constants.RATE_COMMAND -> handleRateCommand(chatId, update.getMessage());
-                default -> handleMessage(update);
-            }
+        switch (messageText) {
+            case Constants.START_COMMAND -> handleStartCommand(chatId, update.getMessage());
+            case Constants.HELP_COMMAND -> handleHelpCommand(chatId, update.getMessage());
+            case Constants.EXIT_COMMAND -> handleExitCommand(chatId, update.getMessage());
+            case Constants.RATE_COMMAND -> handleRateCommand(chatId, update.getMessage());
+            default -> handleMessage(update);
         }
     }
 
@@ -269,13 +268,11 @@ public class TelegramBot extends TelegramLongPollingBot {
 
             switch (command.getOutputType()) {
                 case LIST -> {
-                    ListOutputGenerator listOutputGenerator = new ListOutputGenerator();
                     String currencies = listOutputGenerator.createList(forecastedCurrency);
                     sendMessage(chatId, currencies);
                     log.info("Пользователь {}. Отправлено сообщение: {}", getUserName(message), currencies);
                 }
                 case GRAPH -> {
-                    ChartOutputGenerator chartOutputGenerator = new ChartOutputGenerator();
                     byte[] chart = chartOutputGenerator.createChart(forecastedCurrency);
                     SendPhoto chartMessage = sendMessageGenerator.createPhotoMessage(chatId, chart);
                     executeMessage(chartMessage);

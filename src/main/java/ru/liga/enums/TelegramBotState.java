@@ -1,4 +1,4 @@
-package ru.liga.telegram;
+package ru.liga.enums;
 
 public enum TelegramBotState {
     WAITING_START,

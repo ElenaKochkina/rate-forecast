@@ -25,28 +25,23 @@ public class ConsoleCommandParser {
     public Command parseInputCommand(String input) {
         Matcher matcher = commandPattern.matcher(input);
         if (matcher.matches()) {
-            try {
-                CurrencyCode currencyCode = CurrencyCode.customValueOf(matcher.group(1));
-                ForecastRange forecastType = ForecastRange.getByValue(matcher.group(2));
-                return switch (forecastType) {
-                    case TOMORROW -> new Command(List.of(currencyCode),
-                            LocalDate.now().plusDays(1),
-                            LocalDate.now().plusDays(1),
-                            AlgorithmType.MEAN,
-                            OutputType.LIST);
-                    case WEEK -> new Command(List.of(currencyCode),
-                            LocalDate.now().plusDays(1),
-                            LocalDate.now().plusDays(7),
-                            AlgorithmType.MEAN,
-                            OutputType.LIST);
-                };
-            } catch (IllegalArgumentException e) {
-                log.error("Ошибка при обработке введенной команды. {}", e.getMessage());
-                return null;
-            }
+            CurrencyCode currencyCode = CurrencyCode.customValueOf(matcher.group(1));
+            ForecastRange forecastType = ForecastRange.getByValue(matcher.group(2));
+            return switch (forecastType) {
+                case TOMORROW -> new Command(List.of(currencyCode),
+                        LocalDate.now().plusDays(1),
+                        LocalDate.now().plusDays(1),
+                        AlgorithmType.MEAN,
+                        OutputType.LIST);
+                case WEEK -> new Command(List.of(currencyCode),
+                        LocalDate.now().plusDays(1),
+                        LocalDate.now().plusDays(7),
+                        AlgorithmType.MEAN,
+                        OutputType.LIST);
+            };
         } else {
-            log.error("Неправильный формат команды. Команда '{}' не может быть выполнена", input);
-            return null;
+            throw new IllegalArgumentException(
+                    String.format("Неправильный формат команды. Команда %s не может быть выполнена", input));
         }
     }
 }
