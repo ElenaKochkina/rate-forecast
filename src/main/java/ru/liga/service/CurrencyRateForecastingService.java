@@ -1,55 +1,51 @@
 package ru.liga.service;
 
 import lombok.RequiredArgsConstructor;
-import ru.liga.algorithm.AverageRateCalculator;
+import lombok.extern.log4j.Log4j2;
+import ru.liga.algorithm.AlgorithmFactory;
+import ru.liga.algorithm.ForecastAlgorithm;
 import ru.liga.domain.Command;
 import ru.liga.domain.Currency;
-import ru.liga.domain.CurrencyCode;
+import ru.liga.enums.CurrencyCode;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+@Log4j2
 @RequiredArgsConstructor
 public class CurrencyRateForecastingService {
-    private static final int DAYS_FOR_TOMORROW_FORECAST = 1;
-    private static final int DAYS_FOR_WEEK_FORECAST = 7;
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("E dd.MM.yyyy");
     private final CurrencyRateStorage currencyRateStorage;
+    private final AlgorithmFactory algorithmFactory;
 
-    public void calculateAndPrintCurrencyForecast(Command command) {
-        List<Currency> currencyDataForForecasting = getCurrencyDataForForecasting(command.getCurrencyCode());
-        List<Currency> forecastedCurrency;
-        switch (command.getForecastType()) {
-            case TOMORROW ->
-                    forecastedCurrency = calculateCurrencyRates(currencyDataForForecasting, DAYS_FOR_TOMORROW_FORECAST);
-            case WEEK ->
-                    forecastedCurrency = calculateCurrencyRates(currencyDataForForecasting, DAYS_FOR_WEEK_FORECAST);
-            default ->
-                    throw new IllegalArgumentException("Неподдерживаемый тип прогноза: " + command.getForecastType());
-        }
-        forecastedCurrency.forEach(currency -> printCurrencyRate(currency));
+    /**
+     * Вычисляет прогнозируемые курсы валют на основе переданных параметров команды.
+     *
+     * @param command Объект, содержащий параметры для прогнозирования.
+     * @return Прогнозируемые курсы валют, сгруппированные по коду валюты.
+     */
+    public Map<String, List<Currency>> calculateCurrencyRates(Command command) {
+        log.info("Начало расчета прогноза курсов валют. {}", command);
+        ForecastAlgorithm forecastAlgorithm = algorithmFactory.createAlgorithm(command.getAlgorithmType());
+
+        Map<String, List<Currency>> forecastedCurrencyRates = new HashMap<>();
+        command.getCurrencyCodes().forEach(currencyCode -> {
+            List<Currency> currencyDataForForecasting = getCurrencyDataForForecasting(currencyCode);
+            List<Currency> calculatedRates = forecastAlgorithm.forecastCurrencyRates(currencyDataForForecasting,
+                    command.getStartDate(), command.getEndDate());
+            forecastedCurrencyRates.put(String.valueOf(currencyCode), calculatedRates);
+        });
+        log.info("Расчет прогноза курсов валют завершен");
+        return forecastedCurrencyRates;
     }
 
+    /**
+     * Получает исторические данные о курсах валют для заданного кода валюты.
+     *
+     * @param currencyCode Код валюты.
+     * @return Исторические данные о курсах валюты.
+     */
     private List<Currency> getCurrencyDataForForecasting(CurrencyCode currencyCode) {
-        return currencyRateStorage.getCurrencyData(currencyCode);
-    }
-
-    private List<Currency> calculateCurrencyRates(List<Currency> currencyDataForForecasting, int forecastDays) {
-        List<Currency> calculatedRates = new ArrayList<>();
-        List<Currency> workingDataForForecasting = new ArrayList<>(currencyDataForForecasting);
-        for (int i = 0; i < forecastDays; i++) {
-            BigDecimal averageRate = AverageRateCalculator.getAverageRate(workingDataForForecasting);
-            workingDataForForecasting.add(0, new Currency(LocalDate.now().plusDays(i + 1), averageRate));
-            calculatedRates.add(workingDataForForecasting.get(0));
-        }
-        return calculatedRates;
-    }
-
-    public void printCurrencyRate(Currency currency) {
-        String formattedDate = currency.getRateDate().format(DATE_FORMATTER);
-        System.out.printf("%s - %.2f;%n", formattedDate, currency.getRate());
+        return currencyRateStorage.getCurrencyDataByCurrencyCode(currencyCode);
     }
 }
